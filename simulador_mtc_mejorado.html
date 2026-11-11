@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador MTC - Clase B</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#182230;background:#f4f6fa}
+*{box-sizing:border-box}
+body{margin:0;padding:24px 14px}
+main{max-width:900px;margin:auto}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+h1{font-size:1.65rem;margin:0 0 5px}
+h2{font-size:1.2rem;line-height:1.45;margin:0 0 18px}
+p{line-height:1.5}
+.muted{color:#667085}
+.small{font-size:.86rem}
+.panel{background:#fff;border:1px solid #e3e8ef;border-radius:15px;padding:21px;box-shadow:0 4px 18px #172b4d0a;margin-top:17px}
+button,select,input{font:inherit}
+button{border:0;border-radius:9px;padding:10px 15px;font-weight:650;cursor:pointer;background:#175cd3;color:#fff}
+button.secondary{background:#eaf0f8;color:#243b53}
+button:disabled{opacity:.42;cursor:not-allowed}
+.upload-link{position:relative;background:transparent;color:#667085;padding:5px 0;font-size:.86rem;font-weight:500;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.upload-link:hover{color:#175cd3}
+#file{display:none}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:16px 0}
+.config-row{display:flex;gap:16px;align-items:end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:6px;color:#344054;font-size:.92rem}
+select,input[type=number]{border:1px solid #d0d5dd;border-radius:8px;padding:10px;background:#fff;color:#182230;min-width:150px}
+input[type=number]{width:115px}
+.primary-info{margin:0 0 16px}
+.topline{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.progress{height:8px;background:#e9eef5;border-radius:20px;overflow:hidden;margin:10px 0 22px}
+.progress>div{height:100%;background:#175cd3;transition:width .2s}
+.meta{font-size:.88rem;color:#667085;margin-bottom:10px}
+.question-image,.explanation-image,.option-image{display:block;max-width:100%;height:auto;max-height:430px;object-fit:contain;border-radius:10px;margin:12px auto}
+.options{display:grid;gap:10px}
+.option{width:100%;text-align:left;background:#fff;color:#182230;border:1px solid #d0d5dd;padding:13px 15px;font-weight:500;display:flex;align-items:center;gap:12px}
+.option:hover{background:#f8fafc}
+.option.selected{border:2px solid #175cd3;background:#eff6ff;padding:12px 14px}
+.option.correct{border:2px solid #159455;background:#ecfdf3;padding:12px 14px}
+.option.incorrect{border:2px solid #d92d20;background:#fef3f2;padding:12px 14px}
+.option-text{white-space:pre-wrap;line-height:1.45}
+.option-content{min-width:0;flex:1}
+.option-image{margin:10px 0 0;max-height:230px}
+.feedback{margin-top:17px;padding:14px 16px;border-radius:10px;background:#f2f4f7;line-height:1.55;white-space:pre-wrap}
+.feedback.good{background:#ecfdf3;color:#05603a}
+.feedback.bad{background:#fef3f2;color:#912018}
+.explanation{margin-top:12px;padding-top:12px;border-top:1px solid #d0d5dd;color:#243b53}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
+.error{color:#b42318;white-space:pre-wrap}
+.hidden{display:none!important}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:#f8fafc;border:1px solid #e4e7ec;border-radius:10px;padding:10px 14px;min-width:110px}
+.stat strong{display:block;font-size:1.25rem}
+#summary{line-height:1.6}
+.tag{display:inline-block;background:#eef4ff;color:#3538a5;border-radius:30px;padding:3px 9px;font-size:.8rem}
+@media(max-width:560px){body{padding:16px 10px}.panel{padding:16px}.header{align-items:center}.option{align-items:flex-start}.nav button{flex:1}}
+</style>
+</head>
+<body>
+<main>
+  <div class="header">
+    <div>
+      <h1>Simulador de preguntas MTC</h1>
+      <p class="muted primary-info">Clase B · Categoría II-C. Practica con preguntas aleatorias y revisa la respuesta al instante.</p>
+    </div>
+    <button id="uploadButton" class="upload-link" type="button">Cargar JSON</button>
+    <input id="file" type="file" accept=".json,application/json">
+  </div>
+
+  <section class="panel" id="setup">
+    <div class="topline">
+      <strong>Configura tu práctica</strong>
+      <span class="tag" id="loadedCount">244 preguntas MTC</span>
+    </div>
+    <div class="config-row">
+      <label class="field">Clase / categoría
+        <select id="category"><option value="__all">Todas</option></select>
+      </label>
+      <label class="field">Cantidad de preguntas
+        <input id="questionCount" type="number" min="1" max="244" value="30">
+      </label>
+    </div>
+    <p id="status" class="muted small" aria-live="polite">El balotario MTC está cargado. Las preguntas y alternativas se mezclarán automáticamente.</p>
+    <p id="error" class="error"></p>
+    <div class="toolbar">
+      <button id="start" type="button">Iniciar simulacro</button>
+      <button id="resume" type="button" class="secondary hidden">Continuar donde quedé</button>
+    </div>
+    <p class="muted small">Tu avance se guarda automáticamente en este navegador y dispositivo.</p>
+  </section>
+
+  <section id="quiz" class="panel hidden">
+    <div class="topline">
+      <strong id="counter"></strong>
+      <span class="tag" id="categoryLabel"></span>
+    </div>
+    <div class="progress"><div id="progressFill"></div></div>
+    <div id="topicLabel" class="meta"></div>
+    <h2 id="question"></h2>
+    <img id="questionImage" class="question-image hidden" alt="Imagen de la pregunta">
+    <div id="options" class="options"></div>
+    <div class="toolbar">
+      <button id="reveal" type="button" class="secondary">Mostrar respuesta y fundamento</button>
+    </div>
+    <div id="feedback" class="feedback hidden" aria-live="polite"></div>
+    <div class="nav">
+      <button id="prev" type="button" class="secondary">Anterior</button>
+      <button id="next" type="button">Siguiente</button>
+    </div>
+    <div class="toolbar" style="justify-content:flex-end">
+      <button id="finish" type="button" class="secondary">Finalizar simulacro</button>
+    </div>
+  </section>
+
+  <section id="results" class="panel hidden">
+    <h2>Resultado del simulacro</h2>
+    <div id="summary"></div>
+    <div class="toolbar">
+      <button id="review" type="button">Revisar preguntas</button>
+      <button id="restart" type="button" class="secondary">Volver a configurar</button>
+    </div>
+  </section>
+</main>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  let sourceQuestions = [];
+  const response = await fetch("./mtc_b2c.json");
+  if (!response.ok) {
+    throw new Error("No se pudo cargar preguntas.json");
+  }
+  sourceQuestions = await response.json();
+  let questions = [], index = 0, answers = new Map(), revealed = new Set();
+  let sessionKey = "", finished = false;
+  const optionNumbers = [1,2,3,4];
+  const SHUFFLE_OPTIONS = false;
+
+  function validImage(v){return typeof v==="string"&&v.trim().length>0;}
+  function validate(data){
+    if(!Array.isArray(data)||!data.length)throw new Error("El JSON debe ser un array con al menos una pregunta.");
+    data.forEach((q,i)=>{
+      const label=`Pregunta ${i+1}`;
+      if(!q||typeof q!=="object"||Array.isArray(q))throw new Error(`${label}: el elemento debe ser un objeto.`);
+      if(q.order===undefined||typeof q.question!=="string"||!q.question.trim())throw new Error(`${label}: faltan "order" o "question".`);
+      const existing=optionNumbers.filter(n=>(typeof q[`answer_${n}`]==="string"&&q[`answer_${n}`].trim())||validImage(q[`answer_${n}_image`]));
+      if(existing.length<2)throw new Error(`${label}: debe tener al menos dos alternativas con texto o imagen.`);
+      if(q.correct_answer!=null&&q.correct_answer!==""&&(!Number.isInteger(Number(q.correct_answer))||!existing.includes(Number(q.correct_answer))))throw new Error(`${label}: "correct_answer" debe indicar una alternativa existente (1 a 4).`);
+      ["question_image","explanation_image"].forEach(k=>{if(q[k]!=null&&typeof q[k]!=="string")throw new Error(`${label}: "${k}" debe ser una ruta, URL o null.`);});
+      if(q.explanation!=null&&typeof q.explanation!=="string")throw new Error(`${label}: "explanation" debe ser texto.`);
+    });
+    return [...data].sort((a,b)=>Number(a.order)-Number(b.order));
+  }
+  function shuffle(arr){
+    const a=[...arr];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    return a;
+  }
+  function safeImage(img,src){
+    if(!validImage(src)){img.removeAttribute("src");img.classList.add("hidden");return;}
+    img.onerror=()=>img.classList.add("hidden");
+    img.onload=()=>img.classList.remove("hidden");
+    img.src=src;
+  }
+  function getSelectedQuestions(){
+    const category=$("category").value;
+    let selected=sourceQuestions.filter(q=>category==="__all"||String(q.category||"Sin categoría")===category);
+    selected=shuffle(selected);
+    const requested=Math.max(1,Math.floor(Number($("questionCount").value)||30));
+    selected=selected.slice(0,Math.min(requested,selected.length));
+    return selected.map(q=>{
+      //const opts=shuffle(optionNumbers.filter(n=>(typeof q[`answer_${n}`]==="string"&&q[`answer_${n}`].trim())||validImage(q[`answer_${n}_image`])));
+      const availableOptions = optionNumbers.filter(n =>
+        (typeof q[`answer_${n}`] === "string" && q[`answer_${n}`].trim()) ||
+        validImage(q[`answer_${n}_image`])
+      );
+
+      const opts = SHUFFLE_OPTIONS ? shuffle(availableOptions) : availableOptions;
+      const correctOriginal=q.correct_answer==null||q.correct_answer===""?null:Number(q.correct_answer);
+      return {...q,_options:opts,_correctOriginal:correctOriginal};
+    });
+  }
+  function simpleHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return(h>>>0).toString(16);}
+  function updateResume(){
+    const saved=localStorage.getItem(sessionKey);
+    $("resume").classList.toggle("hidden",!saved);
+  }
+  function updateConfig(){
+    const categories=[...new Set(sourceQuestions.map(q=>String(q.category||"Sin categoría")))].sort();
+    $("category").replaceChildren(new Option("Todas","__all"));
+    categories.forEach(c=>$("category").add(new Option(c,c)));
+    $("loadedCount").textContent=`${sourceQuestions.length} preguntas disponibles`;
+    $("questionCount").max=sourceQuestions.length;
+    $("questionCount").value=Math.min(30,sourceQuestions.length);
+    $("setup").classList.remove("hidden");
+    updateResume();
+  }
+  function load(data,label){
+    try{
+      sourceQuestions=validate(data);
+      sessionKey="question-practice-"+simpleHash(JSON.stringify(sourceQuestions));
+      $("error").textContent="";
+      $("status").textContent=`${sourceQuestions.length} preguntas cargadas desde ${label}.`;
+      updateConfig();
+      $("quiz").classList.add("hidden");$("results").classList.add("hidden");$("setup").classList.remove("hidden");
+    }catch(e){$("error").textContent=e.message;}
+  }
+  function start(resume=false){
+    if(resume){
+      try{
+        const saved=JSON.parse(localStorage.getItem(sessionKey));
+        questions=saved.questions;index=saved.index;answers=new Map(saved.answers);revealed=new Set(saved.revealed);
+      }catch{resume=false;}
+    }
+    if(!resume){
+      questions=getSelectedQuestions();
+      if(!questions.length){$("error").textContent="No hay preguntas disponibles para esta selección.";return;}
+      index=0;answers=new Map();revealed=new Set();finished=false;
+    }
+    $("setup").classList.add("hidden");$("results").classList.add("hidden");$("quiz").classList.remove("hidden");
+    finished=false;render();saveProgress();
+  }
+  function saveProgress(){
+    if(!questions.length||finished)return;
+    localStorage.setItem(sessionKey,JSON.stringify({questions,index,answers:[...answers],revealed:[...revealed]}));
+    updateResume();
+  }
+  function render(){
+    const q=questions[index],selected=answers.get(index),shown=revealed.has(index);
+    $("counter").textContent=`Pregunta ${index+1} de ${questions.length}`;
+    $("progressFill").style.width=`${((index+1)/questions.length)*100}%`;
+    $("categoryLabel").textContent=q.category||"";
+    $("topicLabel").textContent=q.topic?`Tema: ${q.topic}`:"";
+    $("question").textContent=q.question;
+    safeImage($("questionImage"),q.question_image);
+    $("options").replaceChildren();
+    q._options.forEach((n,displayIndex)=>{
+      const btn=document.createElement("button");btn.type="button";btn.className="option";
+      const content=document.createElement("div");content.className="option-content";
+      const title=document.createElement("div");title.className="option-text";
+      //title.textContent=`${String.fromCharCode(65+displayIndex)}. ${q[`answer_${n}`]||""}`;
+      title.textContent=`${q[`answer_${n}`]||""}`;
+      content.append(title);
+      if(validImage(q[`answer_${n}_image`])){
+        const im=document.createElement("img");im.className="option-image";im.alt=`Imagen de alternativa ${String.fromCharCode(65+displayIndex)}`;
+        im.src=q[`answer_${n}_image`];im.onerror=()=>im.classList.add("hidden");content.append(im);
+      }
+      btn.append(content);
+      if(selected===n)btn.classList.add("selected");
+      if(shown&&q._correctOriginal!=null&&n===q._correctOriginal)btn.classList.add("correct");
+      if(shown&&q._correctOriginal!=null&&selected===n&&n!==q._correctOriginal)btn.classList.add("incorrect");
+      btn.addEventListener("click",()=>{if(finished||shown)return;answers.set(index,n);saveProgress();render();});
+      $("options").append(btn);
+    });
+    $("feedback").classList.toggle("hidden",!shown);
+    if(shown){
+      const correct=q._correctOriginal;
+      $("feedback").className=`feedback ${correct==null?"":selected===correct?"good":"bad"}`;
+      $("feedback").replaceChildren();
+      const line=document.createElement("div");
+      if(correct==null)line.textContent="El documento no indica cuál es la respuesta correcta para esta pregunta.";
+      else{
+        const correctText=q[`answer_${correct}`]||`Alternativa ${String.fromCharCode(64+q._options.indexOf(correct)+1)}`;
+        const correctLetter=String.fromCharCode(64+q._options.indexOf(correct)+1);
+        line.textContent=selected===correct?`¡Correcto! La respuesta es ${correctLetter}: ${correctText}`:selected==null?`Respuesta correcta: ${correctLetter}: ${correctText}`:`Respuesta incorrecta. La respuesta correcta es ${correctLetter}: ${correctText}`;
+      }
+      $("feedback").append(line);
+      if(q.explanation){const exp=document.createElement("div");exp.className="explanation";exp.textContent=q.explanation;$("feedback").append(exp);}
+      if(validImage(q.explanation_image)){const im=document.createElement("img");im.className="explanation-image";im.alt="Imagen de la explicación";im.src=q.explanation_image;im.onerror=()=>im.classList.add("hidden");$("feedback").append(im);}
+    }
+    $("prev").disabled=index===0;$("next").disabled=index===questions.length-1;
+    $("reveal").disabled=shown;$("reveal").textContent=shown?"Respuesta mostrada":"Mostrar respuesta y fundamento";
+  }
+  function finish(){
+    if(finished)return;finished=true;localStorage.removeItem(sessionKey);
+    const known=questions.filter(q=>q._correctOriginal!=null);
+    const correct=known.filter((q)=>answers.get(questions.indexOf(q))===q._correctOriginal).length;
+    const wrong=known.filter((q)=>answers.has(questions.indexOf(q))&&answers.get(questions.indexOf(q))!==q._correctOriginal).length;
+    const unanswered=known.length-correct-wrong;
+    const noKey=questions.length-known.length;
+    $("summary").replaceChildren();
+    const stats=document.createElement("div");stats.className="stats";
+    [[correct,"Correctas"],[wrong,"Incorrectas"],[unanswered,"Sin responder"],[noKey,"Sin clave en el PDF"]].forEach(([n,l])=>{
+      const d=document.createElement("div");d.className="stat";const b=document.createElement("strong");b.textContent=n;const sp=document.createElement("span");sp.textContent=l;d.append(b,sp);stats.append(d);
+    });
+    const p=document.createElement("p");
+    p.textContent=known.length?`Resultado: ${Math.round(correct/known.length*100)}% de aciertos sobre ${known.length} preguntas con respuesta indicada.`:"No hay respuestas correctas indicadas para calcular el resultado.";
+    $("summary").append(stats,p);
+    $("quiz").classList.add("hidden");$("results").classList.remove("hidden");
+    $("resume").classList.add("hidden");
+  }
+  $("uploadButton").addEventListener("click",()=>$("file").click());
+  $("file").addEventListener("change",async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{load(JSON.parse(await f.text()),f.name);}catch(err){$("error").textContent=`No se pudo leer el JSON: ${err.message}`;}
+    e.target.value="";
+  });
+  $("start").addEventListener("click",()=>start(false));
+  $("resume").addEventListener("click",()=>start(true));
+  $("reveal").addEventListener("click",()=>{revealed.add(index);saveProgress();render();});
+  $("prev").addEventListener("click",()=>{if(index>0){index--;saveProgress();render();}});
+  $("next").addEventListener("click",()=>{if(index<questions.length-1){index++;saveProgress();render();}});
+  $("finish").addEventListener("click",finish);
+  $("review").addEventListener("click",()=>{index=0;revealed=new Set(questions.map((_,i)=>i));$("results").classList.add("hidden");$("quiz").classList.remove("hidden");finished=false;render();});
+  $("restart").addEventListener("click",()=>{$("results").classList.add("hidden");$("setup").classList.remove("hidden");});
+  $("category").addEventListener("change",()=>{const max=sourceQuestions.filter(q=>$("category").value==="__all"||String(q.category||"Sin categoría")===$("category").value).length;$("questionCount").max=max;$("questionCount").value=Math.min(Number($("questionCount").value)||30,max);updateResume();});
+  $("questionCount").addEventListener("change",()=>{const max=Number($("questionCount").max)||sourceQuestions.length;const value=Math.max(1,Math.min(max,Math.floor(Number($("questionCount").value)||30)));$("questionCount").value=value;});
+  load(sourceQuestions,"el balotario MTC integrado");
+})();
+</script>
+</body>
+</html>
