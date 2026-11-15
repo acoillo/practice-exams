@@ -127,7 +127,7 @@ input[type=number]{width:115px}
 (async () => {
   const $ = id => document.getElementById(id);
   let sourceQuestions = [];
-  const response = await fetch("./mtc_b2c.json");
+  const response = await fetch("./mtc_b2c_final.json");
   if (!response.ok) {
     throw new Error("No se pudo cargar preguntas.json");
   }
@@ -239,8 +239,8 @@ input[type=number]{width:115px}
       const btn=document.createElement("button");btn.type="button";btn.className="option";
       const content=document.createElement("div");content.className="option-content";
       const title=document.createElement("div");title.className="option-text";
-      //title.textContent=`${String.fromCharCode(65+displayIndex)}. ${q[`answer_${n}`]||""}`;
-      title.textContent=`${q[`answer_${n}`]||""}`;
+      title.textContent=`${String.fromCharCode(65+displayIndex)}. ${q[`answer_${n}`]||""}`;
+      //title.textContent=`${q[`answer_${n}`]||""}`;
       content.append(title);
       if(validImage(q[`answer_${n}_image`])){
         const im=document.createElement("img");im.className="option-image";im.alt=`Imagen de alternativa ${String.fromCharCode(65+displayIndex)}`;
