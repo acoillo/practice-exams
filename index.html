@@ -79,7 +79,7 @@ input[type=number]{width:115px}
         <select id="category"><option value="__all">Todas</option></select>
       </label>
       <label class="field">Cantidad de preguntas
-        <input id="questionCount" type="number" min="1" max="244" value="30">
+        <input id="questionCount" type="number" min="1" max="244" value="40">
       </label>
     </div>
     <p id="status" class="muted small" aria-live="polite">El balotario MTC está cargado. Las preguntas y alternativas se mezclarán automáticamente.</p>
@@ -167,7 +167,7 @@ input[type=number]{width:115px}
     const category=$("category").value;
     let selected=sourceQuestions.filter(q=>category==="__all"||String(q.category||"Sin categoría")===category);
     selected=shuffle(selected);
-    const requested=Math.max(1,Math.floor(Number($("questionCount").value)||30));
+    const requested=Math.max(1,Math.floor(Number($("questionCount").value)||40));
     selected=selected.slice(0,Math.min(requested,selected.length));
     return selected.map(q=>{
       //const opts=shuffle(optionNumbers.filter(n=>(typeof q[`answer_${n}`]==="string"&&q[`answer_${n}`].trim())||validImage(q[`answer_${n}_image`])));
@@ -192,7 +192,7 @@ input[type=number]{width:115px}
     categories.forEach(c=>$("category").add(new Option(c,c)));
     $("loadedCount").textContent=`${sourceQuestions.length} preguntas disponibles`;
     $("questionCount").max=sourceQuestions.length;
-    $("questionCount").value=Math.min(30,sourceQuestions.length);
+    $("questionCount").value=Math.min(40,sourceQuestions.length);
     $("setup").classList.remove("hidden");
     updateResume();
   }
@@ -304,8 +304,8 @@ input[type=number]{width:115px}
   $("finish").addEventListener("click",finish);
   $("review").addEventListener("click",()=>{index=0;revealed=new Set(questions.map((_,i)=>i));$("results").classList.add("hidden");$("quiz").classList.remove("hidden");finished=false;render();});
   $("restart").addEventListener("click",()=>{$("results").classList.add("hidden");$("setup").classList.remove("hidden");});
-  $("category").addEventListener("change",()=>{const max=sourceQuestions.filter(q=>$("category").value==="__all"||String(q.category||"Sin categoría")===$("category").value).length;$("questionCount").max=max;$("questionCount").value=Math.min(Number($("questionCount").value)||30,max);updateResume();});
-  $("questionCount").addEventListener("change",()=>{const max=Number($("questionCount").max)||sourceQuestions.length;const value=Math.max(1,Math.min(max,Math.floor(Number($("questionCount").value)||30)));$("questionCount").value=value;});
+  $("category").addEventListener("change",()=>{const max=sourceQuestions.filter(q=>$("category").value==="__all"||String(q.category||"Sin categoría")===$("category").value).length;$("questionCount").max=max;$("questionCount").value=Math.min(Number($("questionCount").value)||40,max);updateResume();});
+  $("questionCount").addEventListener("change",()=>{const max=Number($("questionCount").max)||sourceQuestions.length;const value=Math.max(1,Math.min(max,Math.floor(Number($("questionCount").value)||40)));$("questionCount").value=value;});
   load(sourceQuestions,"el balotario MTC integrado");
 })();
 </script>
