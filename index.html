@@ -102,7 +102,7 @@ input[type=number]{width:115px}
     <img id="questionImage" class="question-image hidden" alt="Imagen de la pregunta">
     <div id="options" class="options"></div>
     <div class="toolbar">
-      <button id="reveal" type="button" class="secondary">Mostrar respuesta y fundamento</button>
+      <button id="reveal" type="button" class="secondary">Mostrar respuesta</button>
     </div>
     <div id="feedback" class="feedback hidden" aria-live="polite"></div>
     <div class="nav">
@@ -127,16 +127,16 @@ input[type=number]{width:115px}
 (async () => {
   const $ = id => document.getElementById(id);
   let sourceQuestions = [];
-  let sourceQuestions2 = [];
+  //let sourceQuestions2 = [];
   const response = await fetch("./mtc_b2c_final.json");
-  const response2 = await fetch("./mtc_b2c.json");
+  //const response2 = await fetch("./mtc_b2c.json");
   if (!response.ok && !response2.ok) {
     throw new Error("No se pudo cargar preguntas.json");
   }
   sourceQuestions = await response.json();
-  sourceQuestions2 = await response2.json();
+  /*sourceQuestions2 = await response2.json();
   let auxQuestions = sourceQuestions.concat(sourceQuestions2);
-  sourceQuestions = auxQuestions;
+  sourceQuestions = auxQuestions;*/
   let questions = [], index = 0, answers = new Map(), revealed = new Set();
   let sessionKey = "", finished = false;
   const optionNumbers = [1,2,3,4];
@@ -275,7 +275,7 @@ input[type=number]{width:115px}
       if(validImage(q.explanation_image)){const im=document.createElement("img");im.className="explanation-image";im.alt="Imagen de la explicación";im.src=q.explanation_image;im.onerror=()=>im.classList.add("hidden");$("feedback").append(im);}
     }
     $("prev").disabled=index===0;$("next").disabled=index===questions.length-1;
-    $("reveal").disabled=shown;$("reveal").textContent=shown?"Respuesta mostrada":"Mostrar respuesta y fundamento";
+    $("reveal").disabled=shown;$("reveal").textContent=shown?"Respuesta mostrada":"Mostrar respuesta";
   }
   function finish(){
     if(finished)return;finished=true;localStorage.removeItem(sessionKey);
