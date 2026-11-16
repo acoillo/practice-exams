@@ -119,6 +119,7 @@ input[type=number]{width:115px}
     <div id="summary"></div>
     <div class="toolbar">
       <button id="review" type="button">Revisar preguntas</button>
+      <button id="reviewIncorrect" type="button" class="secondary">Revisar incorrectas</button>
       <button id="restart" type="button" class="secondary">Volver a configurar</button>
     </div>
   </section>
@@ -292,6 +293,7 @@ input[type=number]{width:115px}
     const p=document.createElement("p");
     p.textContent=known.length?`Resultado: ${Math.round(correct/known.length*100)}% de aciertos sobre ${known.length} preguntas con respuesta indicada.`:"No hay respuestas correctas indicadas para calcular el resultado.";
     $("summary").append(stats,p);
+    $("reviewIncorrect").disabled = wrong === 0;
     $("quiz").classList.add("hidden");$("results").classList.remove("hidden");
     $("resume").classList.add("hidden");
   }
@@ -308,6 +310,24 @@ input[type=number]{width:115px}
   $("next").addEventListener("click",()=>{if(index<questions.length-1){index++;saveProgress();render();}});
   $("finish").addEventListener("click",finish);
   $("review").addEventListener("click",()=>{index=0;revealed=new Set(questions.map((_,i)=>i));$("results").classList.add("hidden");$("quiz").classList.remove("hidden");finished=false;render();});
+  $("reviewIncorrect").addEventListener("click",()=>{
+    const incorrectIndexes=questions
+      .map((q,i)=>({q,i}))
+      .filter(({q,i})=>q._correctOriginal!=null&&answers.has(i)&&answers.get(i)!==q._correctOriginal)
+      .map(({i})=>i);
+
+    if(!incorrectIndexes.length)return;
+
+    const previousAnswers=answers;
+    questions=incorrectIndexes.map(i=>questions[i]);
+    answers=new Map(incorrectIndexes.map((oldIndex,newIndex)=>[newIndex,previousAnswers.get(oldIndex)]));
+    index=0;
+    revealed=new Set(questions.map((_,i)=>i));
+    $("results").classList.add("hidden");
+    $("quiz").classList.remove("hidden");
+    finished=false;
+    render();
+  });
   $("restart").addEventListener("click",()=>{$("results").classList.add("hidden");$("setup").classList.remove("hidden");});
   $("category").addEventListener("change",()=>{const max=sourceQuestions.filter(q=>$("category").value==="__all"||String(q.category||"Sin categoría")===$("category").value).length;$("questionCount").max=max;$("questionCount").value=Math.min(Number($("questionCount").value)||40,max);updateResume();});
   $("questionCount").addEventListener("change",()=>{const max=Number($("questionCount").max)||sourceQuestions.length;const value=Math.max(1,Math.min(max,Math.floor(Number($("questionCount").value)||40)));$("questionCount").value=value;});
